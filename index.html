@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>快乐就是哈哈哈｜段子轮播</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              bg: '#0a0a0a',
+              fg: '#ffffff',
+              soft: '#1a1a1a',
+              mute: '#9ca3af'
+            }
+          },
+          boxShadow: {
+            soft: '0 10px 30px rgba(0,0,0,0.15)'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 平滑进出场动画 */
+    .fade-enter { opacity: 0; transform: translateY(8px); }
+    .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 500ms ease; }
+    .fade-exit { opacity: 1; transform: translateY(0); }
+    .fade-exit-active { opacity: 0; transform: translateY(-8px); transition: all 400ms ease; }
+  </style>
+</head>
+<body class="min-h-dvh bg-black text-white selection:bg-white selection:text-black">
+  <!-- 顶部导航 -->
+  <header class="sticky top-0 z-40 border-b border-white/10 backdrop-blur">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 items-center justify-between">
+        <a href="#" class="inline-flex items-center gap-3 group" aria-label="首页 - 快乐就是哈哈哈">
+          <span class="h-9 w-9 grid place-items-center rounded-full bg-white text-black font-bold">哈</span>
+          <div class="leading-tight">
+            <div class="font-semibold tracking-tight">快乐就是哈哈哈</div>
+            <div class="text-xs text-white/60">极简 · 纯 HTML + Tailwind</div>
+          </div>
+        </a>
+        <nav class="flex items-center gap-2 sm:gap-4">
+          <button id="viewJokesBtn" class="px-3 py-2 text-sm rounded-xl hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">段子</button>
+          <button id="viewFavsBtn" class="px-3 py-2 text-sm rounded-xl hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20">收藏</button>
+          <div class="w-px h-6 bg-white/10 mx-1"></div>
+          <button id="loginBtn" class="px-3 py-2 text-sm rounded-xl bg-white text-black font-medium hover:opacity-90 hidden">登录</button>
+          <div id="userMenu" class="relative">
+            <button id="userBtn" class="hidden px-3 py-2 text-sm rounded-xl bg-white/10 hover:bg-white/20 aria-expanded=false">👤 <span id="usernameText" class="ml-1 align-middle"></span></button>
+            <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-white text-black shadow-soft overflow-hidden">
+              <button id="logoutBtn" class="w-full text-left px-4 py-3 text-sm hover:bg-black/5">退出登录</button>
+              <button id="clearFavBtn" class="w-full text-left px-4 py-3 text-sm hover:bg-black/5">清空收藏</button>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主体区域 -->
+  <main class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+    <!-- 进度条 -->
+    <div class="h-1 w-full bg-white/10 rounded-full overflow-hidden mt-8" aria-hidden="true">
+      <div id="progress" class="h-full w-0 bg-white"></div>
+    </div>
+
+    <!-- 段子卡片 -->
+    <section id="jokesSection" class="relative mt-8">
+      <article aria-live="polite" aria-atomic="true" class="rounded-3xl border border-white/10 bg-white/5 p-8 md:p-12 shadow-soft">
+        <div class="flex items-start justify-between gap-4">
+          <div class="text-sm uppercase tracking-widest text-white/50">今日笑点</div>
+          <button id="favBtn" class="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 hover:bg-white hover:text-black transition" aria-pressed="false" title="收藏/取消收藏">
+            <span id="favIcon">☆</span><span class="text-sm">收藏</span>
+          </button>
+        </div>
+        <div id="jokeText" class="mt-6 text-2xl md:text-3xl leading-relaxed font-medium"></div>
+        <div class="mt-6 flex items-center justify-between text-sm text-white/60">
+          <div>
+            <span id="jokeIndex">1</span>/<span id="jokeTotal">—</span>
+            <span class="mx-2">·</span>
+            <span>每 1 分钟自动更换</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="prevBtn" class="px-3 py-2 rounded-lg hover:bg-white/10">上一条</button>
+            <button id="nextBtn" class="px-3 py-2 rounded-lg hover:bg-white/10">下一条</button>
+            <button id="pauseBtn" class="px-3 py-2 rounded-lg hover:bg-white/10">暂停</button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- 收藏列表 -->
+    <section id="favsSection" class="hidden mt-10">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold tracking-tight">我的收藏</h2>
+        <div class="text-sm text-white/60" id="favCountLabel"></div>
+      </div>
+      <ul id="favList" class="mt-4 grid gap-4"></ul>
+      <div id="noFavTip" class="hidden mt-8 text-center text-white/50">暂无收藏。去浏览段子，点击“收藏”保存喜欢的内容。</div>
+    </section>
+
+    <footer class="py-16 text-center text-xs text-white/40">
+      © <span id="year"></span> 快乐就是哈哈哈 · 极简黑白风 · 纯 HTML + TailwindCSS
+    </footer>
+  </main>
+
+  <!-- 登录对话框 -->
+  <div id="loginModal" class="fixed inset-0 hidden items-center justify-center bg-black/60 p-4 z-50" role="dialog" aria-modal="true">
+    <div class="w-full max-w-md rounded-2xl bg-white text-black p-6 shadow-soft">
+      <div class="flex items-start justify-between">
+        <h3 class="text-lg font-semibold">登录</h3>
+        <button id="loginClose" class="p-2 -m-2" aria-label="关闭">✕</button>
+      </div>
+      <p class="mt-1 text-sm text-gray-600">为了保存收藏，我们采用本地安全登录（仅保存在你的浏览器）。</p>
+      <form id="loginForm" class="mt-6 space-y-4">
+        <div>
+          <label class="block text-sm mb-1" for="loginName">用户名</label>
+          <input id="loginName" required autocomplete="username" class="w-full rounded-xl border border-black/10 px-3 py-2 outline-none focus:ring-2 focus:ring-black/10" placeholder="如：hahaha" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1" for="loginPass">密码</label>
+          <input id="loginPass" type="password" required autocomplete="current-password" class="w-full rounded-xl border border-black/10 px-3 py-2 outline-none focus:ring-2 focus:ring-black/10" placeholder="最少 4 位" minlength="4" />
+        </div>
+        <button class="w-full rounded-xl bg-black text-white py-2.5 hover:opacity-90">进入</button>
+      </form>
+      <p class="mt-3 text-xs text-gray-500">提示：此登录仅用于在本地设备区分用户与收藏，不会上传到服务器。</p>
+    </div>
+  </div>
+
+  <script>
+    // ---------------- 基础数据（示例段子，可替换为你的内容） ----------------
+    const JOKES = [
+      '朋友问我：“你为什么总是笑？” 我说：“因为哭太贵了，护肤品承受不起。”',
+      '今天决定减肥，于是我把体重秤藏了起来。问题解决了！',
+      '面试官：你的优点？我：会自我反省。面试官：缺点？我：反省后也不改。',
+      '我不喜欢早起，但闹钟喜欢我，它每天都来找我聊天。',
+      '健身卡买了三年，教练说我很稳定，我觉得他话里有话。',
+      '存款和身高一样，都是我不愿意提起的话题。',
+      '给室友泡了杯咖啡，他感动地说：苦吗？我：不苦，已经习惯生活的味道了。',
+      '今天心情不错，决定奖励自己不开会。结果老板同意了——把会延长了半小时。',
+      '朋友说我适合做减法，于是我开始减少社交、减少焦虑、减少起床次数。',
+      '电子秤：请保持静止。我：我已经静止不动很多年了，尤其是存款。'
+    ];
+
+    // ---------------- 状态与存储 ----------------
+    const $ = (sel) => document.querySelector(sel);
+    const state = {
+      user: null,
+      index: 0,
+      intervalId: null,
+      paused: false,
+      progressTimer: null,
+    };
+    const STORAGE_KEY = 'hahaha_users'; // { [username]: { pass: string, favs: string[] } }
+
+    function loadUsers() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+    }
+    function saveUsers(users) { localStorage.setItem(STORAGE_KEY, JSON.stringify(users)); }
+
+    // 当前用户收藏相关
+    function getUserFavs() { return state.user ? (loadUsers()[state.user]?.favs || []) : []; }
+    function setUserFavs(nextFavs) {
+      if (!state.user) return;
+      const users = loadUsers();
+      if (!users[state.user]) users[state.user] = { pass: '', favs: [] };
+      users[state.user].favs = nextFavs;
+      saveUsers(users);
+      renderFavSection();
+      syncFavBtn();
+    }
+
+    // ---------------- UI 渲染 ----------------
+    function setText(el, text) { el.textContent = text; }
+
+    function renderJoke() {
+      const text = JOKES[state.index];
+      const el = $('#jokeText');
+      // 动画：
+      el.classList.remove('fade-enter-active');
+      el.classList.add('fade-exit');
+      void el.offsetWidth; // 触发重绘
+      el.classList.remove('fade-exit');
+      el.classList.add('fade-enter');
+      setText(el, '“' + text + '”');
+      void el.offsetWidth;
+      el.classList.add('fade-enter-active');
+
+      setText($('#jokeIndex'), String(state.index + 1));
+      setText($('#jokeTotal'), String(JOKES.length));
+      syncFavBtn();
+      restartProgress();
+    }
+
+    function syncFavBtn() {
+      const favs = getUserFavs();
+      const id = String(state.index);
+      const isFav = favs.includes(id);
+      const btn = $('#favBtn');
+      btn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+      $('#favIcon').textContent = isFav ? '★' : '☆';
+      btn.querySelector('span:last-child').textContent = isFav ? '已收藏' : '收藏';
+    }
+
+    function renderFavSection() {
+      const list = $('#favList');
+      const favs = getUserFavs();
+      list.innerHTML = '';
+      $('#favCountLabel').textContent = `${favs.length} 条`;
+      $('#noFavTip').classList.toggle('hidden', favs.length !== 0);
+      favs.forEach((idStr) => {
+        const idx = parseInt(idStr, 10);
+        const li = document.createElement('li');
+        li.className = 'rounded-2xl border border-white/10 bg-white/5 p-5';
+        li.innerHTML = `
+          <div class="text-sm text-white/60 mb-2">第 ${idx + 1} 条</div>
+          <div class="text-lg leading-relaxed">“${JOKES[idx]}”</div>
+          <div class="mt-4 flex gap-2">
+            <button data-jump="${idx}" class="px-3 py-2 rounded-lg bg-white text-black text-sm hover:opacity-90">跳转播放</button>
+            <button data-remove="${idx}" class="px-3 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/10">取消收藏</button>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    // 进度条（60 秒循环）
+    function restartProgress() {
+      const bar = $('#progress');
+      clearInterval(state.progressTimer);
+      bar.style.width = '0%';
+      let elapsed = 0;
+      const total = 60_000; // 60 秒
+      const tick = 100; // 0.1s 刷新
+      state.progressTimer = setInterval(() => {
+        if (state.paused) return;
+        elapsed += tick;
+        const pct = Math.min(100, (elapsed / total) * 100);
+        bar.style.width = pct + '%';
+        if (pct >= 100) clearInterval(state.progressTimer);
+      }, tick);
+    }
+
+    // ---------------- 轮播控制 ----------------
+    function nextJoke() {
+      state.index = (state.index + 1) % JOKES.length;
+      renderJoke();
+    }
+    function prevJoke() {
+      state.index = (state.index - 1 + JOKES.length) % JOKES.length;
+      renderJoke();
+    }
+    function startAuto() {
+      clearInterval(state.intervalId);
+      state.intervalId = setInterval(() => { if (!state.paused) nextJoke(); }, 60_000);
+    }
+
+    // ---------------- 登录模块（仅本地） ----------------
+    function updateAuthUI() {
+      const loggedIn = Boolean(state.user);
+      $('#loginBtn').classList.toggle('hidden', loggedIn);
+      $('#userBtn').classList.toggle('hidden', !loggedIn);
+      $('#usernameText').textContent = loggedIn ? state.user : '';
+    }
+
+    function openLogin() { $('#loginModal').classList.remove('hidden'); $('#loginName').focus(); }
+    function closeLogin() { $('#loginModal').classList.add('hidden'); }
+
+    function login(username, password) {
+      const users = loadUsers();
+      if (!users[username]) users[username] = { pass: password, favs: [] };
+      // 简易验证（仅本地用途，不要用于生产）
+      if (users[username].pass !== password) {
+        alert('密码不正确');
+        return false;
+      }
+      saveUsers(users);
+      state.user = username;
+      updateAuthUI();
+      renderFavSection();
+      return true;
+    }
+
+    function logout() {
+      state.user = null;
+      updateAuthUI();
+    }
+
+    // ---------------- 事件绑定 ----------------
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      if (t.id === 'nextBtn') nextJoke();
+      if (t.id === 'prevBtn') prevJoke();
+      if (t.id === 'pauseBtn') {
+        state.paused = !state.paused;
+        t.textContent = state.paused ? '继续' : '暂停';
+      }
+      if (t.id === 'favBtn') {
+        if (!state.user) { openLogin(); return; }
+        const favs = new Set(getUserFavs());
+        const id = String(state.index);
+        if (favs.has(id)) favs.delete(id); else favs.add(id);
+        setUserFavs([...favs].sort((a,b)=>Number(a)-Number(b)));
+      }
+      if (t.id === 'viewFavsBtn') {
+        $('#jokesSection').classList.add('hidden');
+        $('#favsSection').classList.remove('hidden');
+        renderFavSection();
+      }
+      if (t.id === 'viewJokesBtn') {
+        $('#favsSection').classList.add('hidden');
+        $('#jokesSection').classList.remove('hidden');
+      }
+      if (t.id === 'loginBtn') openLogin();
+      if (t.id === 'loginClose') closeLogin();
+      if (t.id === 'userBtn') {
+        const dd = $('#userDropdown');
+        dd.classList.toggle('hidden');
+        const expanded = dd.classList.contains('hidden') ? 'false' : 'true';
+        t.setAttribute('aria-expanded', expanded);
+      }
+      if (t.id === 'logoutBtn') { logout(); $('#userDropdown').classList.add('hidden'); }
+      if (t.id === 'clearFavBtn') {
+        if (!state.user) return;
+        if (confirm('确认清空全部收藏？')) setUserFavs([]);
+        $('#userDropdown').classList.add('hidden');
+      }
+
+      // 收藏列表中的跳转与移除
+      if (t.matches('[data-jump]')) {
+        const idx = Number(t.getAttribute('data-jump'));
+        state.index = idx; renderJoke();
+        $('#viewJokesBtn').click();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      if (t.matches('[data-remove]')) {
+        const idx = String(t.getAttribute('data-remove'));
+        const favs = getUserFavs().filter(id => id !== idx);
+        setUserFavs(favs);
+      }
+    });
+
+    // 登录表单
+    $('#loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const u = $('#loginName').value.trim();
+      const p = $('#loginPass').value.trim();
+      if (!u || !p) return;
+      const ok = login(u, p);
+      if (ok) closeLogin();
+    });
+
+    // 点击外部关闭下拉
+    document.addEventListener('click', (e) => {
+      if (!$('#userMenu').contains(e.target)) $('#userDropdown').classList.add('hidden');
+    });
+
+    // ---------------- 初始化 ----------------
+    (function init() {
+      setText($('#year'), new Date().getFullYear());
+      renderJoke();
+      startAuto();
+      updateAuthUI();
+    })();
+  </script>
+</body>
+</html>
